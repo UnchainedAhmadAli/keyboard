@@ -26,7 +26,7 @@ class SoundEngine(private val context: Context) {
 
     init {
         pool.setOnLoadCompleteListener { _, id, status -> if (status == 0) ready.add(id) }
-        val dir = File(context.cacheDir, "notes_v1").apply { mkdirs() }
+        val dir = File(context.cacheDir, "notes_v2").apply { mkdirs() }
         for (f in Songs.allFrequencies) {
             val file = File(dir, "n_${(f * 100).toInt()}.wav")
             if (!file.exists()) writeWav(file, f)
@@ -36,7 +36,7 @@ class SoundEngine(private val context: Context) {
 
     fun play(freq: Double) {
         val id = ids[freq] ?: return
-        if (id in ready) pool.play(id, 0.9f, 0.9f, 1, 0, 1f)
+        if (id in ready) pool.play(id, 0.55f, 0.55f, 1, 0, 1f)
     }
 
     fun release() = pool.release()
@@ -50,7 +50,7 @@ class SoundEngine(private val context: Context) {
             val attack = if (t < 0.012) t / 0.012 else 1.0
             val env = attack * exp(-3.4 * t)
             val w = tri(freq, t) + 0.35 * sin(2 * PI * freq * 2 * t) + 0.12 * sin(2 * PI * freq * 3 * t)
-            val v = (w * env * 0.45 * 32767).toInt().coerceIn(-32768, 32767)
+            val v = (w * env * 0.18 * 32767).toInt().coerceIn(-32768, 32767)
             pcm.putShort(v.toShort())
         }
         val data = pcm.array()

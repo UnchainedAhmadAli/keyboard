@@ -23,10 +23,12 @@ object Songs {
 
 enum class Kind { CHAR, SHIFT, BACKSPACE, ENTER, LANG, SYMBOLS, LETTERS, SPACE }
 
-data class KeyDef(val id: String, val kind: Kind, val weight: Float = 1f)
+data class KeyDef(val id: String, val kind: Kind, val weight: Float = 1f, val hint: String? = null)
 
 object Layouts {
     private fun chars(vararg s: String) = s.map { KeyDef(it, Kind.CHAR) }
+    private fun withDigits(keys: List<KeyDef>): List<KeyDef> =
+        keys.mapIndexed { i, k -> if (i < 10) k.copy(hint = ((i + 1) % 10).toString()) else k }
     private fun shift() = KeyDef("shift", Kind.SHIFT, 1.5f)
     private fun back() = KeyDef("back", Kind.BACKSPACE, 1.5f)
     private fun bottom(symLabel: String, comma: String, symKind: Kind) = listOf(
@@ -39,8 +41,7 @@ object Layouts {
     )
 
     val enLetters: List<List<KeyDef>> = listOf(
-        chars("1", "2", "3", "4", "5", "6", "7", "8", "9", "0"),
-        chars("q", "w", "e", "r", "t", "y", "u", "i", "o", "p"),
+        withDigits(chars("q", "w", "e", "r", "t", "y", "u", "i", "o", "p")),
         chars("a", "s", "d", "f", "g", "h", "j", "k", "l"),
         listOf(shift()) + chars("z", "x", "c", "v", "b", "n", "m") + listOf(back()),
         bottom("123", ",", Kind.SYMBOLS),
@@ -51,8 +52,7 @@ object Layouts {
     )
 
     val arLetters: List<List<KeyDef>> = listOf(
-        chars("١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩", "٠"),
-        chars("ض", "ص", "ث", "ق", "ف", "غ", "ع", "ه", "خ", "ح", "ج", "د"),
+        withDigits(chars("ض", "ص", "ث", "ق", "ف", "غ", "ع", "ه", "خ", "ح", "ج", "د")),
         chars("ش", "س", "ي", "ب", "ل", "ا", "ت", "ن", "م", "ك", "ط", "ذ"),
         listOf(shift()) + chars("ئ", "ء", "ؤ", "ر", "لا", "ى", "ة", "و", "ز", "ظ") + listOf(back()),
         bottom("123", "،", Kind.SYMBOLS),
