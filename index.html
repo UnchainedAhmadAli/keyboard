@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Happy Keys</title>
+<meta name="theme-color" content="#7b5cff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Happy Keys">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+:root{
+  --bg:#fff4fb; --ink:#3a2a5a; --panel:#ffffff; --accent:#7b5cff;
+  --k1:#ff8fbf; --k2:#ffb86b; --k3:#ffe066; --k4:#7be0a3; --k5:#6fd0ff; --k6:#b69bff;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+html,body{height:100%;margin:0}
+body{
+  background:linear-gradient(160deg,#fff4fb,#eef0ff);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Naskh Arabic","Geeza Pro",sans-serif;
+  display:flex;flex-direction:column;overflow:hidden;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  user-select:none;-webkit-user-select:none;
+}
+header{display:flex;align-items:center;gap:8px;padding:8px 12px;flex-wrap:wrap}
+h1{font-size:1.1rem;margin:0;margin-inline-end:auto}
+.chip{border:0;border-radius:999px;padding:8px 14px;font:inherit;font-weight:600;background:var(--panel);color:var(--ink);box-shadow:0 2px 6px #7b5cff22;cursor:pointer}
+.chip.on{background:var(--accent);color:#fff}
+select.chip{appearance:none;padding-inline:14px}
+#text{
+  flex:1 1 auto;min-height:80px;margin:0 12px 8px;padding:14px;border-radius:18px;border:2px solid #e3d9ff;
+  background:var(--panel);color:var(--ink);font-size:1.6rem;line-height:1.5;resize:none;outline:none;
+  user-select:text;-webkit-user-select:text;
+}
+#text:focus{border-color:var(--accent)}
+#kb{padding:8px 6px 10px;background:#f1eaff;border-radius:22px 22px 0 0;box-shadow:0 -4px 16px #7b5cff22}
+.row{display:flex;gap:6px;margin-bottom:6px;justify-content:center}
+.key{
+  flex:1 1 0;min-width:0;height:clamp(44px,8.2vh,64px);border:0;border-radius:12px;
+  font:inherit;font-size:clamp(1.05rem,4.2vw,1.7rem);font-weight:700;color:#2b1d4a;
+  box-shadow:0 3px 0 #0002;transition:transform .05s,filter .05s;cursor:pointer;
+}
+.key.pressed,.key:active{transform:translateY(3px);box-shadow:0 0 0 #0002;filter:brightness(1.12)}
+.key.wide{flex:1.6}.key.space{flex:5}.key.fn{background:#d9ccff;font-size:clamp(.85rem,3.4vw,1.2rem)}
+.key.on{background:var(--accent);color:#fff}
+.c0{background:var(--k1)}.c1{background:var(--k2)}.c2{background:var(--k3)}
+.c3{background:var(--k4)}.c4{background:var(--k5)}.c5{background:var(--k6)}
+#now{font-size:.85rem;opacity:.7;padding:0 14px 6px;min-height:1.4em}
+.note{position:fixed;pointer-events:none;font-size:2rem;animation:up 1s ease-out forwards;z-index:10}
+@keyframes up{to{transform:translateY(-120px) rotate(20deg);opacity:0}}
+#install{display:none}
+#toast{position:fixed;bottom:40%;left:50%;transform:translateX(-50%);background:#3a2a5a;color:#fff;padding:10px 16px;border-radius:12px;opacity:0;transition:opacity .3s;pointer-events:none}
+#toast.show{opacity:.95}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎂 Happy Keys</h1>
+  <button class="chip" id="lang">العربية</button>
+  <select class="chip" id="song" aria-label="Song"></select>
+  <button class="chip" id="mute">🔊</button>
+  <button class="chip" id="copy">Copy</button>
+  <button class="chip" id="clear">Clear</button>
+  <button class="chip" id="install">Install</button>
+</header>
+<textarea id="text" inputmode="none" dir="auto" placeholder="Tap the keys…  اضغط على الأزرار…" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+<div id="now"></div>
+<div id="kb"></div>
+<div id="toast"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- Songs: each key press plays the next note ---------- */
+const N = {C4:261.63,D4:293.66,E4:329.63,F4:349.23,G4:392,A4:440,B4:493.88,C5:523.25,D5:587.33,E5:659.25,F5:698.46,G5:783.99,A5:880,
+           Bb4:466.16,Eb5:622.25,G3:196,A3:220,B3:246.94,F4s:369.99,D4s:311.13};
+const seq = s => s.split(' ').map(n => N[n]);
+const SONGS = {
+  'Happy Birthday 🎂': seq('G4 G4 A4 G4 C5 B4 G4 G4 A4 G4 D5 C5 G4 G4 G5 E5 C5 B4 A4 F5 F5 E5 C5 D5 C5'),
+  'Twinkle Twinkle ⭐': seq('C4 C4 G4 G4 A4 A4 G4 F4 F4 E4 E4 D4 D4 C4 G4 G4 F4 F4 E4 E4 D4 G4 G4 F4 F4 E4 E4 D4 C4 C4 G4 G4 A4 A4 G4 F4 F4 E4 E4 D4 D4 C4'),
+  'Jingle Bells 🔔': seq('E4 E4 E4 E4 E4 E4 E4 G4 C4 D4 E4 F4 F4 F4 F4 F4 E4 E4 E4 E4 D4 D4 E4 D4 G4'),
+  'Ode to Joy 🎶': seq('E4 E4 F4 G4 G4 F4 E4 D4 C4 C4 D4 E4 E4 D4 D4 E4 E4 F4 G4 G4 F4 E4 D4 C4 C4 D4 E4 D4 C4 C4'),
+  'Piano scale 🎹': seq('C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 G5 F5 E5 D5 C5 B4 A4 G4 F4 E4 D4'),
+};
+
+/* ---------- Layouts ---------- */
+const L = {
+  en: {
+    dir:'ltr', label:'English',
+    rows:[
+      ['1','2','3','4','5','6','7','8','9','0'],
+      ['q','w','e','r','t','y','u','i','o','p'],
+      ['a','s','d','f','g','h','j','k','l'],
+      ['⇧','z','x','c','v','b','n','m','⌫'],
+      ['🌐','123','space',',','.','↵'],
+    ],
+    shift:{ '1':'!','2':'@','3':'#','4':'$','5':'%','6':'^','7':'&','8':'*','9':'(','0':')' },
+    sym:[
+      ['1','2','3','4','5','6','7','8','9','0'],
+      ['-','/',':',';','(',')','$','&','@','"'],
+      ['.',',','?','!',"'",'#','%','+','='],
+      ['⇧','*','_','~','<','>','[',']','⌫'],
+      ['🌐','abc','space',',','.','↵'],
+    ],
+  },
+  ar: {
+    dir:'rtl', label:'العربية',
+    rows:[
+      ['١','٢','٣','٤','٥','٦','٧','٨','٩','٠'],
+      ['ض','ص','ث','ق','ف','غ','ع','ه','خ','ح','ج'],
+      ['ش','س','ي','ب','ل','ا','ت','ن','م','ك','ط'],
+      ['⇧','ئ','ء','ؤ','ر','لا','ى','ة','و','ز','ظ','⌫'],
+      ['🌐','123','space','،','.','↵'],
+    ],
+    shift:{ 'ض':'َ','ص':'ً','ث':'ُ','ق':'ٌ','ف':'لإ','غ':'إ','ع':'‘','ه':'÷','خ':'×','ح':'؛','ج':'<',
+            'ش':'ِ','س':'ٍ','ي':']','ب':'[','ل':'لأ','ا':'أ','ت':'ـ','ن':'،','م':'/','ك':':','ط':'"',
+            'ئ':'~','ء':'ْ','ؤ':'}','ر':'{','لا':'لآ','ى':'آ','ة':'’','و':',','ز':'.','ظ':'؟' },
+    sym:[
+      ['1','2','3','4','5','6','7','8','9','0'],
+      ['-','/',':','؛','(',')','$','&','@','"'],
+      ['.','،','؟','!',"'",'#','%','+','='],
+      ['⇧','*','_','~','<','>','[',']','⌫'],
+      ['🌐','أبج','space','،','.','↵'],
+    ],
+  },
+};
+
+/* ---------- State ---------- */
+const $ = id => document.getElementById(id);
+const text = $('text'), kb = $('kb'), now = $('now');
+const store = { get(k,d){ try{ return localStorage.getItem(k) ?? d }catch{ return d } }, set(k,v){ try{ localStorage.setItem(k,v) }catch{} } };
+let lang = store.get('lang','en'), shift = false, sym = false, muted = store.get('muted','0') === '1';
+let songName = store.get('song', Object.keys(SONGS)[0]);
+if (!SONGS[songName]) songName = Object.keys(SONGS)[0];
+let idx = 0;
+
+/* ---------- Audio (WebAudio, no files needed) ---------- */
+let ac;
+function audio(){
+  if (!ac) { const C = window.AudioContext || window.webkitAudioContext; if (C) ac = new C(); }
+  if (ac && ac.state === 'suspended') ac.resume();
+  return ac;
+}
+function playNote(freq){
+  if (muted) return;
+  const a = audio(); if (!a) return;
+  const t = a.currentTime, g = a.createGain();
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(0.5,t+0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+1.1);
+  g.connect(a.destination);
+  [[1,'triangle',1],[2,'sine',0.35],[3,'sine',0.12]].forEach(([m,type,v]) => {
+    const o = a.createOscillator(), og = a.createGain();
+    o.type = type; o.frequency.value = freq*m; og.gain.value = v;
+    o.connect(og); og.connect(g); o.start(t); o.stop(t+1.2);
+  });
+}
+function tune(el){
+  const s = SONGS[songName];
+  playNote(s[idx % s.length]);
+  idx++;
+  burst(el);
+  now.textContent = `♪ ${songName}  ·  ${idx % s.length || s.length}/${s.length}`;
+}
+function burst(el){
+  const r = el.getBoundingClientRect(), n = document.createElement('div');
+  n.className = 'note'; n.textContent = ['♪','♫','🎵','✨','🎈'][Math.floor(Math.random()*5)];
+  n.style.left = (r.left + r.width/2 - 12) + 'px'; n.style.top = (r.top - 6) + 'px';
+  document.body.appendChild(n); setTimeout(() => n.remove(), 1000);
+}
+
+/* ---------- Text editing ---------- */
+function insert(s){
+  text.focus({preventScroll:true});
+  const a = text.selectionStart, b = text.selectionEnd;
+  text.setRangeText(s, a, b, 'end');
+}
+function backspace(){
+  text.focus({preventScroll:true});
+  const a = text.selectionStart, b = text.selectionEnd;
+  if (a !== b) { text.setRangeText('', a, b, 'end'); return; }
+  if (a === 0) return;
+  // delete one full character (handles emoji / surrogate pairs)
+  const chars = Array.from(text.value.slice(0,a));
+  const last = chars.pop();
+  text.setRangeText('', a - last.length, a, 'end');
+}
+
+/* ---------- Keyboard rendering ---------- */
+function render(){
+  const lay = L[lang];
+  const rows = sym ? lay.sym : lay.rows;
+  document.documentElement.lang = lang;
+  $('lang').textContent = lang === 'en' ? 'العربية' : 'English';
+  kb.innerHTML = '';
+  let color = 0;
+  rows.forEach(r => {
+    const row = document.createElement('div'); row.className = 'row'; row.dir = 'ltr';
+    r.forEach(k => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'key';
+      let out = k;
+      if (k === 'space') { b.classList.add('space','c4'); b.textContent = '␣'; }
+      else if (k === '⇧')  { b.classList.add('fn','wide'); if (shift) b.classList.add('on'); b.textContent = '⇧'; }
+      else if (k === '⌫')  { b.classList.add('fn','wide'); b.textContent = '⌫'; }
+      else if (k === '↵')  { b.classList.add('fn','wide'); b.textContent = '↵'; }
+      else if (k === '🌐' || k === '123' || k === 'abc' || k === 'أبج') { b.classList.add('fn','wide'); b.textContent = k; }
+      else {
+        if (shift) out = lay.shift[k] || (lang === 'en' ? k.toUpperCase() : k);
+        b.textContent = out; b.classList.add('c' + (color++ % 6));
+      }
+      b.dataset.k = k; b.dataset.out = out;
+      row.appendChild(b);
+    });
+    kb.appendChild(row);
+  });
+}
+
+function press(b){
+  const k = b.dataset.k;
+  audio();
+  switch (k) {
+    case '⇧': shift = !shift; render(); return;
+    case '🌐': setLang(lang === 'en' ? 'ar' : 'en'); return;
+    case '123': case 'أبج': sym = true; shift = false; render(); return;
+    case 'abc': sym = false; shift = false; render(); return;
+    case '⌫': backspace(); tune(b); return;
+    case '↵': insert('\n'); tune(b); return;
+    case 'space': insert(' '); tune(b); return;
+    default:
+      insert(b.dataset.out); tune(b);
+      if (shift) { shift = false; render(); }
+  }
+}
+
+/* Pointer events: instant response + keeps textarea focus */
+kb.addEventListener('pointerdown', e => {
+  const b = e.target.closest('.key'); if (!b) return;
+  e.preventDefault();
+  b.classList.add('pressed');
+  press(b);
+});
+['pointerup','pointercancel','pointerleave'].forEach(ev =>
+  kb.addEventListener(ev, e => { const b = e.target.closest?.('.key'); if (b) b.classList.remove('pressed'); }, true));
+kb.addEventListener('contextmenu', e => e.preventDefault());
+
+/* Physical keyboard (laptop) support: keys also play tunes */
+text.addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Enter') {
+    tune(text);
+  }
+});
+
+/* ---------- Controls ---------- */
+function setLang(l){
+  lang = l; sym = false; shift = false; store.set('lang', l);
+  text.dir = 'auto'; render(); toast(L[l].label);
+}
+$('lang').onclick = () => setLang(lang === 'en' ? 'ar' : 'en');
+
+const sel = $('song');
+Object.keys(SONGS).forEach(n => { const o = document.createElement('option'); o.textContent = n; o.value = n; sel.appendChild(o); });
+sel.value = songName;
+sel.onchange = () => { songName = sel.value; idx = 0; store.set('song', songName); audio(); playNote(SONGS[songName][0]); now.textContent = '♪ ' + songName; };
+
+function paintMute(){ $('mute').textContent = muted ? '🔇' : '🔊'; }
+$('mute').onclick = () => { muted = !muted; store.set('muted', muted ? '1' : '0'); paintMute(); };
+paintMute();
+
+$('clear').onclick = () => { text.value = ''; idx = 0; now.textContent = ''; };
+$('copy').onclick = async () => {
+  try { await navigator.clipboard.writeText(text.value); toast(lang === 'en' ? 'Copied!' : 'تم النسخ!'); }
+  catch { text.select(); document.execCommand('copy'); toast('Copied!'); }
+};
+
+let tt;
+function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 1200); }
+
+/* ---------- Install + offline ---------- */
+let deferred;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; $('install').style.display = ''; });
+$('install').onclick = async () => { if (!deferred) return; deferred.prompt(); await deferred.userChoice; deferred = null; $('install').style.display = 'none'; };
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+
+render();
+})();
+</script>
+</body>
+</html>
