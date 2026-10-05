@@ -47,7 +47,7 @@ select.chip{appearance:none;padding-inline:14px}
   user-select:text;-webkit-user-select:text;
 }
 #text:focus{border-color:var(--accent);border-style:solid}
-#kb{padding:10px 6px 10px;background:linear-gradient(180deg,#6d2f9c,#4a1f73);border-radius:22px 22px 0 0;box-shadow:0 -4px 16px #4a1f7344;border-top:4px solid var(--gold)}
+#kb{padding:10px 6px 10px;background:linear-gradient(180deg,#6d2f9c,#4a1f73);border-radius:22px 22px 0 0;box-shadow:0 -4px 16px #4a1f7344;border-top:4px solid var(--gold);background-image:radial-gradient(circle,#ffffff14 0 3px,transparent 4px),linear-gradient(180deg,#6d2f9c,#4a1f73);background-size:18px 18px,100% 100%}
 .row{display:flex;gap:6px;margin-bottom:6px;justify-content:center}
 .key{
   flex:1 1 0;min-width:0;height:clamp(44px,8.2vh,64px);border:0;border-radius:50% 50% 46% 46% / 58% 58% 42% 42%;
@@ -55,14 +55,20 @@ select.chip{appearance:none;padding-inline:14px}
   box-shadow:inset -4px -5px 0 #0002,inset 3px 3px 0 #fff6,0 3px 0 #0004;transition:transform .05s,filter .05s;cursor:pointer;
 }
 .key.pressed,.key:active{transform:translateY(3px) scale(1.06);filter:brightness(1.15)}
-.key.wide{flex:1.6}.key.space{flex:5;border-radius:999px}.key.fn{background:#ffe9a8;border-radius:14px;font-size:clamp(.85rem,3.4vw,1.2rem)}
+.key.wide{flex:1.6}.key.space{flex:5;border-radius:999px}.key.fn{background-color:#ffe9a8;border-radius:14px;font-size:clamp(.85rem,3.4vw,1.2rem)}
 .key.on{background:var(--accent);color:#fff}
-.key.space{background:var(--gold)}
-.c0{background:var(--k1)}.c1{background:var(--k2)}.c2{background:var(--k3)}
-.c3{background:var(--k4)}.c4{background:var(--k5)}.c5{background:var(--k6)}
+.key.space{background-color:var(--gold)}
+.c0{background-color:var(--k1)}.c1{background-color:var(--k2)}.c2{background-color:var(--k3)}
+.c3{background-color:var(--k4)}.c4{background-color:var(--k5)}.c5{background-color:var(--k6)}
+/* decals: patterns printed on each key */
+.d0{background-image:radial-gradient(circle,#ffffff80 0 2.2px,transparent 2.6px);background-size:11px 11px}
+.d1{background-image:repeating-linear-gradient(135deg,#ffffff55 0 4px,transparent 4px 10px)}
+.d2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cpath d='M11 3l2.2 5 5.3.5-4 3.6 1.2 5.3L11 14.600 6.300 17.400l1.200-5.300-4-3.600 5.300-.5z' fill='%23ffffff88'/%3E%3C/svg%3E");background-size:22px 22px}
+.d3{background-image:linear-gradient(135deg,#ffffff50 25%,transparent 25%),linear-gradient(225deg,#ffffff50 25%,transparent 25%);background-size:14px 14px}
+.d4{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26'%3E%3Cpath d='M2 6q4-5 8 0t8 0' stroke='%23ffffff99' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='6' cy='20' r='2' fill='%23ffffff88'/%3E%3Crect x='17' y='17' width='5' height='5' fill='%23ffffff77' transform='rotate(20 19 19)'/%3E%3C/svg%3E");background-size:26px 26px}
+.key.space{background-image:repeating-linear-gradient(90deg,#ffffff55 0 6px,transparent 6px 14px)}
+.key.fn{background-image:radial-gradient(circle,#ffffff99 0 1.600px,transparent 2px);background-size:9px 9px}
 #now{font-size:.85rem;opacity:.7;padding:0 14px 6px;min-height:1.4em}
-.note{position:fixed;pointer-events:none;font-size:2rem;animation:up 1s ease-out forwards;z-index:10}
-@keyframes up{to{transform:translateY(-120px) rotate(20deg);opacity:0}}
 #install{display:none}
 #toast{position:fixed;bottom:40%;left:50%;transform:translateX(-50%);background:#3a2a5a;color:#fff;padding:10px 16px;border-radius:12px;opacity:0;transition:opacity .3s;pointer-events:none}
 #toast.show{opacity:.95}
@@ -70,10 +76,10 @@ select.chip{appearance:none;padding-inline:14px}
 </head>
 <body>
 <header>
-  <h1>🎂 Happy Keys</h1>
+  <h1>Happy Keys</h1>
   <button class="chip" id="lang">العربية</button>
   <select class="chip" id="song" aria-label="Song"></select>
-  <button class="chip" id="mute">🔊</button>
+  <button class="chip" id="mute">Sound on</button>
   <button class="chip" id="copy">Copy</button>
   <button class="chip" id="clear">Clear</button>
   <button class="chip" id="install">Install</button>
@@ -92,11 +98,11 @@ const N = {C4:261.63,D4:293.66,E4:329.63,F4:349.23,G4:392,A4:440,B4:493.88,C5:52
            Bb4:466.16,Eb5:622.25,G3:196,A3:220,B3:246.94,F4s:369.99,D4s:311.13};
 const seq = s => s.split(' ').map(n => N[n]);
 const SONGS = {
-  'Happy Birthday 🎂': seq('G4 G4 A4 G4 C5 B4 G4 G4 A4 G4 D5 C5 G4 G4 G5 E5 C5 B4 A4 F5 F5 E5 C5 D5 C5'),
-  'Twinkle Twinkle ⭐': seq('C4 C4 G4 G4 A4 A4 G4 F4 F4 E4 E4 D4 D4 C4 G4 G4 F4 F4 E4 E4 D4 G4 G4 F4 F4 E4 E4 D4 C4 C4 G4 G4 A4 A4 G4 F4 F4 E4 E4 D4 D4 C4'),
-  'Jingle Bells 🔔': seq('E4 E4 E4 E4 E4 E4 E4 G4 C4 D4 E4 F4 F4 F4 F4 F4 E4 E4 E4 E4 D4 D4 E4 D4 G4'),
-  'Ode to Joy 🎶': seq('E4 E4 F4 G4 G4 F4 E4 D4 C4 C4 D4 E4 E4 D4 D4 E4 E4 F4 G4 G4 F4 E4 D4 C4 C4 D4 E4 D4 C4 C4'),
-  'Piano scale 🎹': seq('C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 G5 F5 E5 D5 C5 B4 A4 G4 F4 E4 D4'),
+  'Happy Birthday': seq('G4 G4 A4 G4 C5 B4 G4 G4 A4 G4 D5 C5 G4 G4 G5 E5 C5 B4 A4 F5 F5 E5 C5 D5 C5'),
+  'Twinkle Twinkle': seq('C4 C4 G4 G4 A4 A4 G4 F4 F4 E4 E4 D4 D4 C4 G4 G4 F4 F4 E4 E4 D4 G4 G4 F4 F4 E4 E4 D4 C4 C4 G4 G4 A4 A4 G4 F4 F4 E4 E4 D4 D4 C4'),
+  'Jingle Bells': seq('E4 E4 E4 E4 E4 E4 E4 G4 C4 D4 E4 F4 F4 F4 F4 F4 E4 E4 E4 E4 D4 D4 E4 D4 G4'),
+  'Ode to Joy': seq('E4 E4 F4 G4 G4 F4 E4 D4 C4 C4 D4 E4 E4 D4 D4 E4 E4 F4 G4 G4 F4 E4 D4 C4 C4 D4 E4 D4 C4 C4'),
+  'Piano scale': seq('C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 G5 F5 E5 D5 C5 B4 A4 G4 F4 E4 D4'),
 };
 
 /* ---------- Layouts ---------- */
@@ -108,7 +114,7 @@ const L = {
       ['q','w','e','r','t','y','u','i','o','p'],
       ['a','s','d','f','g','h','j','k','l'],
       ['⇧','z','x','c','v','b','n','m','⌫'],
-      ['🌐','123','space',',','.','↵'],
+      ['EN ع','123','space',',','.','↵'],
     ],
     shift:{ '1':'!','2':'@','3':'#','4':'$','5':'%','6':'^','7':'&','8':'*','9':'(','0':')' },
     sym:[
@@ -116,7 +122,7 @@ const L = {
       ['-','/',':',';','(',')','$','&','@','"'],
       ['.',',','?','!',"'",'#','%','+','='],
       ['⇧','*','_','~','<','>','[',']','⌫'],
-      ['🌐','abc','space',',','.','↵'],
+      ['EN ع','abc','space',',','.','↵'],
     ],
   },
   ar: {
@@ -126,7 +132,7 @@ const L = {
       ['ض','ص','ث','ق','ف','غ','ع','ه','خ','ح','ج'],
       ['ش','س','ي','ب','ل','ا','ت','ن','م','ك','ط'],
       ['⇧','ئ','ء','ؤ','ر','لا','ى','ة','و','ز','ظ','⌫'],
-      ['🌐','123','space','،','.','↵'],
+      ['EN ع','123','space','،','.','↵'],
     ],
     shift:{ 'ض':'َ','ص':'ً','ث':'ُ','ق':'ٌ','ف':'لإ','غ':'إ','ع':'‘','ه':'÷','خ':'×','ح':'؛','ج':'<',
             'ش':'ِ','س':'ٍ','ي':']','ب':'[','ل':'لأ','ا':'أ','ت':'ـ','ن':'،','م':'/','ك':':','ط':'"',
@@ -136,7 +142,7 @@ const L = {
       ['-','/',':','؛','(',')','$','&','@','"'],
       ['.','،','؟','!',"'",'#','%','+','='],
       ['⇧','*','_','~','<','>','[',']','⌫'],
-      ['🌐','أبج','space','،','.','↵'],
+      ['EN ع','أبج','space','،','.','↵'],
     ],
   },
 };
@@ -175,14 +181,7 @@ function tune(el){
   const s = SONGS[songName];
   playNote(s[idx % s.length]);
   idx++;
-  burst(el);
-  now.textContent = `♪ ${songName}  ·  ${idx % s.length || s.length}/${s.length}`;
-}
-function burst(el){
-  const r = el.getBoundingClientRect(), n = document.createElement('div');
-  n.className = 'note'; n.textContent = ['🎈','🎉','🎊','🎂','🎁','✨','♪'][Math.floor(Math.random()*7)];
-  n.style.left = (r.left + r.width/2 - 12) + 'px'; n.style.top = (r.top - 6) + 'px';
-  document.body.appendChild(n); setTimeout(() => n.remove(), 1000);
+  now.textContent = `${songName}  ·  ${idx % s.length || s.length}/${s.length}`;
 }
 
 /* ---------- Text editing ---------- */
@@ -220,10 +219,10 @@ function render(){
       else if (k === '⇧')  { b.classList.add('fn','wide'); if (shift) b.classList.add('on'); b.textContent = '⇧'; }
       else if (k === '⌫')  { b.classList.add('fn','wide'); b.textContent = '⌫'; }
       else if (k === '↵')  { b.classList.add('fn','wide'); b.textContent = '↵'; }
-      else if (k === '🌐' || k === '123' || k === 'abc' || k === 'أبج') { b.classList.add('fn','wide'); b.textContent = k; }
+      else if (k === 'EN ع' || k === '123' || k === 'abc' || k === 'أبج') { b.classList.add('fn','wide'); b.textContent = k; }
       else {
         if (shift) out = lay.shift[k] || (lang === 'en' ? k.toUpperCase() : k);
-        b.textContent = out; b.classList.add('c' + (color++ % 6));
+        b.textContent = out; b.classList.add('c' + (color % 6), 'd' + ((color * 7 + Math.floor(color / 6)) % 5)); color++;
       }
       b.dataset.k = k; b.dataset.out = out;
       row.appendChild(b);
@@ -237,7 +236,7 @@ function press(b){
   audio();
   switch (k) {
     case '⇧': shift = !shift; render(); return;
-    case '🌐': setLang(lang === 'en' ? 'ar' : 'en'); return;
+    case 'EN ع': setLang(lang === 'en' ? 'ar' : 'en'); return;
     case '123': case 'أبج': sym = true; shift = false; render(); return;
     case 'abc': sym = false; shift = false; render(); return;
     case '⌫': backspace(); tune(b); return;
@@ -278,9 +277,9 @@ $('lang').onclick = () => setLang(lang === 'en' ? 'ar' : 'en');
 const sel = $('song');
 Object.keys(SONGS).forEach(n => { const o = document.createElement('option'); o.textContent = n; o.value = n; sel.appendChild(o); });
 sel.value = songName;
-sel.onchange = () => { songName = sel.value; idx = 0; store.set('song', songName); audio(); playNote(SONGS[songName][0]); now.textContent = '♪ ' + songName; };
+sel.onchange = () => { songName = sel.value; idx = 0; store.set('song', songName); audio(); playNote(SONGS[songName][0]); now.textContent = songName; };
 
-function paintMute(){ $('mute').textContent = muted ? '🔇' : '🔊'; }
+function paintMute(){ $('mute').textContent = muted ? 'Sound off' : 'Sound on'; }
 $('mute').onclick = () => { muted = !muted; store.set('muted', muted ? '1' : '0'); paintMute(); };
 paintMute();
 
