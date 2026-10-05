@@ -62,8 +62,15 @@ class KeyboardView(context: Context, private val listener: KeyListener) : View(c
 
     private val handler = Handler(Looper.getMainLooper())
     private var repeating: Runnable? = null
+    private val longPress = HashMap<Int, Runnable>()
+    private val deferred = HashSet<Int>()
+    private val fired = HashSet<Int>()
+    private val hintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER; color = 0xB33B1450.toInt()
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
 
-    private val rowH get() = dp(56f)
+    private val rowH get() = dp(60f)
     private val pad get() = dp(8f)
     private val gap get() = dp(6f)
 
@@ -184,9 +191,22 @@ class KeyboardView(context: Context, private val listener: KeyListener) : View(c
                 if (s.length > 2 && k.def.kind == Kind.CHAR) text.textSize = rowH * .34f
                 text.color = ink
                 c.drawText(s, cx, cy - (text.descent() + text.ascent()) / 2, text)
+                hintOf(k.def)?.let { h ->
+                    hintPaint.textSize = rowH * .22f
+                    c.drawText(hintLabel(h), r.centerX() + r.width() * .24f, r.top + rowH * .26f, hintPaint)
+                }
             }
         }
     }
+
+    /** Small secondary character: digits on the top row, extra marks/variants elsewhere (Arabic). Long-press types it. */
+    private fun hintOf(k: KeyDef): String? {
+        if (k.kind != Kind.CHAR || shift || symbols) return null
+        return k.hint ?: if (arabic) Layouts.arShift[k.id] else null
+    }
+
+    private fun hintLabel(h: String): String =
+        if (h.length == 1 && Character.getType(h[0]) == Character.NON_SPACING_MARK.toInt()) "ـ$h" else h
 
     private fun lighten(col: Int): Int {
         val f = { v: Int -> min(255, v + 45) }
@@ -307,14 +327,38 @@ class KeyboardView(context: Context, private val listener: KeyListener) : View(c
                 val k = hit(e.getX(i), e.getY(i)) ?: return true
                 pressed[e.getPointerId(i)] = k
                 performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                press(k)
+                val id = e.getPointerId(i)
+                val h = hintOf(k.def)
+                if (h != null) {
+                    // typed on release, or the hint character if held
+                    deferred.add(id)
+                    listener.onTune()
+                    val r = Runnable {
+                        fired.add(id); listener.onText(h)
+                        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                    }
+                    longPress[id] = r
+                    handler.postDelayed(r, 380)
+                } else press(k)
                 invalidate()
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
                 val i = e.actionIndex
-                val k = pressed.remove(e.getPointerId(i))
+                val id = e.getPointerId(i)
+                val k = pressed.remove(id)
+                longPress.remove(id)?.let { handler.removeCallbacks(it) }
+                if (deferred.remove(id)) {
+                    val wasFired = fired.remove(id)
+                    if (!wasFired && k != null && e.actionMasked != MotionEvent.ACTION_CANCEL) {
+                        listener.onText(label(k.def))
+                        if (shift) { shift = false; invalidate() }
+                    }
+                }
                 if (k?.def?.kind == Kind.BACKSPACE) stopRepeat()
-                if (e.actionMasked == MotionEvent.ACTION_CANCEL) { pressed.clear(); stopRepeat() }
+                if (e.actionMasked == MotionEvent.ACTION_CANCEL) {
+                    pressed.clear(); stopRepeat()
+                    longPress.values.forEach { handler.removeCallbacks(it) }; longPress.clear(); deferred.clear(); fired.clear()
+                }
                 invalidate()
             }
         }
